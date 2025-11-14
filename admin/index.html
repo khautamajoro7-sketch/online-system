@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #35f8ff;
+    }
+    h1 {
+      color: #333;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    li {
+      margin: 10px 0;
+    }
+    a {
+      color: #0066cc;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .logout {
+      margin-top: 20px;
+      display: inline-block;
+      color: rgb(7, 1, 1);
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+ 
+  <h1>Administrator Dashboard</h1>
+  <p>Welcome, <strong id="user"></strong></p>
+
+  <ul>
+    <li><a href="./users.html">Manage Users</a></li>
+    <li><a href="">Manage Subjects</a></li>
+    <li><a href="./exams.html">Manage Exams</a></li>
+    <li><a href="./reports.html">View Reports</a></li>
+  </ul>
+<button><a href="../index.html">Logout</a></button>
+
+
+  <script>
+    // Simulated session check
+    const username = sessionStorage.getItem('username');
+    const role = sessionStorage.getItem('role');
+
+    if (!username || role !== 'admin') {
+      alert('Access denied. Please login as admin.');
+      window.location.href = 'index.html';
+    } else {
+      document.getElementById('user').textContent = username;
+    }
+
+    function logout() {
+      sessionStorage.clear();
+      window.location.href = 'index.html';
+    }
+  </script>
+
+</body>
+</html>

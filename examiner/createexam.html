@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Exam – Online Exam System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #25ebf1;
+            padding: 20px;
+        }
+        .container {
+            background: rgb(155, 151, 151);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        input, textarea, select, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-family: Arial, sans-serif;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        button {
+            background: #0066cc;
+            color: rgb(10, 10, 10);
+            border: none;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background: #004d99;
+        }
+        .msg {
+            color: green;
+            text-align: center;
+        }
+        .error {
+            color: red;
+            text-align: center;
+        }
+        .question-section {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            background: #fafafa;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-group button {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <article class="container">
+        <h1>Create Exam</h1>
+        <form id="createExamForm">
+            <section>
+                <label for="examTitle">Exam Title:</label>
+                <input type="text" id="examTitle" placeholder="Enter exam title" required>
+            </section>
+
+            <section>
+                <label for="examDescription">Description:</label>
+                <textarea id="examDescription" placeholder="Enter exam description"></textarea>
+            </section>
+
+            <section>
+                <label for="duration">Duration (minutes):</label>
+                <input type="number" id="duration" placeholder="Duration" min="1" required>
+            </section>
+
+            <section>
+                <label for="totalMarks">Total Marks:</label>
+                <input type="number" id="totalMarks" placeholder="Total marks" min="1" required>
+            </section>
+
+            <fieldset>
+                <legend>Questions</legend>
+                <div id="questionsContainer"></div>
+                <button type="button" id="addQuestionBtn">+ Add Question</button>
+            </fieldset>
+
+            <p class="msg" id="successMsg"></p>
+            <p class="error" id="errorMsg"></p>
+
+            <div class="btn-group">
+                <button type="submit">Create Exam</button>
+                <button type="reset">Clear</button>
+            </div>
+        </form>
+    </article>
+</main>
+
+<script>
+let questionCount = 0;
+
+document.getElementById('addQuestionBtn').addEventListener('click', function() {
+    addQuestion();
+});
+
+function addQuestion() {
+    questionCount++;
+    const questionHTML = `
+        <div class="question-section" id="question-${questionCount}">
+            <h3>Question ${questionCount}</h3>
+            <label>Question Text:</label>
+            <textarea class="questionText" placeholder="Enter question" required></textarea>
+            
+            <label>Question Type:</label>
+            <select class="questionType" required>
+                <option value="mcq">Multiple Choice</option>
+                <option value="short">Short Answer</option>
+            </select>
+            
+            <div class="optionsContainer"></div>
+            <button type="button" class="removeQuestionBtn">Remove Question</button>
+        </div>
+    `;
+    document.getElementById('questionsContainer').insertAdjacentHTML('beforeend', questionHTML);
+    
+    const questionSection = document.getElementById(`question-${questionCount}`);
+    const typeSelect = questionSection.querySelector('.questionType');
+    typeSelect.addEventListener('change', () => updateQuestionType(questionCount));
+    updateQuestionType(questionCount);
+    
+    questionSection.querySelector('.removeQuestionBtn').addEventListener('click', () => {
+        questionSection.remove();
+    });
+}
+
+function updateQuestionType(qNum) {
+    const questionSection = document.getElementById(`question-${qNum}`);
+    const type = questionSection.querySelector('.questionType').value;
+    const optionsContainer = questionSection.querySelector('.optionsContainer');
+    
+    if (type === 'mcq') {
+        optionsContainer.innerHTML = `
+            <label>Options:</label>
+            <input type="text" class="option" placeholder="Option 1" required>
+            <input type="text" class="option" placeholder="Option 2" required>
+            <input type="text" class="option" placeholder="Option 3" required>
+            <input type="text" class="option" placeholder="Option 4" required>
+            <label>Correct Answer:</label>
+            <select class="correctAnswer" required>
+                <option value="">Select correct option</option>
+                <option value="0">Option 1</option>
+                <option value="1">Option 2</option>
+                <option value="2">Option 3</option>
+                <option value="3">Option 4</option>
+            </select>
+        `;
+    } else {
+        optionsContainer.innerHTML = `
+            <label>Marks:</label>
+            <input type="number" class="marks" placeholder="Marks for this question" min="1" required>
+        `;
+    }
+}
+
+document.getElementById('createExamForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const examTitle = document.getElementById('examTitle').value.trim();
+    const questions = [];
+    
+    document.querySelectorAll('.question-section').forEach((section, index) => {
+        const type = section.querySelector('.questionType').value;
+        const questionText = section.querySelector('.questionText').value.trim();
+        
+        const question = { questionText, type };
+        
+        if (type === 'mcq') {
+            question.options = Array.from(section.querySelectorAll('.option')).map(opt => opt.value);
+            question.correctAnswer = section.querySelector('.correctAnswer').value;
+        } else {
+            question.marks = section.querySelector('.marks').value;
+        }
+        
+        questions.push(question);
+    });
+    
+    if (questions.length === 0) {
+        document.getElementById('errorMsg').textContent = 'Add at least one question.';
+        return;
+    }
+    
+    const exam = {
+        id: Date.now(),
+        title: examTitle,
+        description: document.getElementById('examDescription').value,
+        duration: document.getElementById('duration').value,
+        totalMarks: document.getElementById('totalMarks').value,
+        questions,
+        createdBy: sessionStorage.getItem('username')
+    };
+    
+    const exams = JSON.parse(localStorage.getItem('exams')) || [];
+    exams.push(exam);
+    localStorage.setItem('exams', JSON.stringify(exams));
+    
+    document.getElementById('successMsg').textContent = 'Exam created successfully!';
+    document.getElementById('errorMsg').textContent = '';
+    this.reset();
+    document.getElementById('questionsContainer').innerHTML = '';
+    questionCount = 0;
+});
+</script>
+
+</body>
+</html> 

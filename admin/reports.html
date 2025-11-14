@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Performance Reports – Online Exam System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #15cbf8;
+            padding: 20px;
+        }
+        .container {
+            background: rgb(151, 150, 150);
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 1000px;
+            margin: 0 auto;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            font-size: 2em;
+            margin-bottom: 30px;
+        }
+        .exam-report {
+            background: #fff;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .exam-report:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .exam-report h3 {
+            margin-top: 0;
+            color: #0066cc;
+        }
+        .summary {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+        .summary .summary-item {
+            background: #fafafa;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            width: 23%;
+            min-width: 250px;
+            text-align: center;
+        }
+        .summary-item h3 {
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #0066cc;
+            color: white;
+            text-transform: uppercase;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #004d99;
+        }
+        .msg {
+            color: green;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .error {
+            color: red;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Overall Performance Reports</h1>
+
+    <!-- Exam Reports Section -->
+    <div id="examReportsSection">
+        <!-- Exam performance reports will be loaded here -->
+    </div>
+
+    <!-- Summary Section -->
+    <div class="summary" id="summarySection">
+        <!-- Summary statistics will be displayed here -->
+    </div>
+
+    <!-- Success/Failure Messages -->
+    <p class="msg" id="successMsg"></p>
+    <p class="error" id="errorMsg"></p>
+</div>
+
+<script>
+// Load data
+const exams = JSON.parse(localStorage.getItem('exams')) || [];
+const graded = JSON.parse(localStorage.getItem('graded')) || [];
+
+// Function to calculate summary statistics for an exam
+function calculateSummary(examId) {
+    const examGraded = graded.filter(g => g.examId == examId);
+
+    if (examGraded.length === 0) {
+        return null;
+    }
+
+    const totalScores = examGraded.map(g => g.totalMarks);
+    const averageScore = totalScores.reduce((acc, score) => acc + score, 0) / totalScores.length;
+    const highestScore = Math.max(...totalScores);
+    const lowestScore = Math.min(...totalScores);
+
+    const scoreDistribution = totalScores.reduce((dist, score) => {
+        const range = Math.floor(score / 10) * 10;  // Group scores into 10-point ranges
+        dist[range] = (dist[range] || 0) + 1;
+        return dist;
+    }, {});
+
+    return { averageScore, highestScore, lowestScore, scoreDistribution, totalScores };
+}
+
+// Function to load performance reports for each exam
+function loadExamReports() {
+    const container = document.getElementById('examReportsSection');
+    container.innerHTML = "";  // Clear previous reports
+
+    if (exams.length === 0) {
+        container.innerHTML = "<p class='error'>No exams available.</p>";
+        return;
+    }
+
+    exams.forEach(exam => {
+        const summary = calculateSummary(exam.id);
+        const div = document.createElement('div');
+        div.classList.add('exam-report');
+        div.innerHTML = `
+            <h3>${exam.title}</h3>
+            <p><strong>Average Score:</strong> ${summary ? summary.averageScore.toFixed(2) : 'N/A'}</p>
+            <p><strong>Highest Score:</strong> ${summary ? summary.highestScore : 'N/A'}</p>
+            <p><strong>Lowest Score:</strong> ${summary ? summary.lowestScore : 'N/A'}</p>
+            <button onclick="viewDetailedReport(${exam.id})">View Detailed Report</button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// Function to display detailed report for a specific exam
+function viewDetailedReport(examId) {
+    const summary = calculateSummary(examId);
+
+    if (!summary) {
+        document.getElementById('errorMsg').textContent = "No graded submissions available for this exam.";
+        return;
+    }
+
+    const summarySection = document.getElementById('summarySection');
+    summarySection.innerHTML = "";
+
+    // Display summary data
+    summarySection.innerHTML = `
+        <div class="summary-item">
+            <h3>Average Score</h3>
+            <p>${summary.averageScore.toFixed(2)}</p>
+        </div>
+        <div class="summary-item">
+            <h3>Highest Score</h3>
+            <p>${summary.highestScore}</p>
+        </div>
+        <div class="summary-item">
+            <h3>Lowest Score</h3>
+            <p>${summary.lowestScore}</p>
+        </div>
+    `;
+
+    // List student breakdown
+    const students = graded.filter(g => g.examId == examId);
+    const table = document.createElement('table');
+    table.innerHTML = `
+        <thead>
+            <tr>
+                <th>Student Name</th>
+                <th>Total Marks</th>
+                <th>Marks Breakdown</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${students.map(student => {
+                return `
+                    <tr>
+                        <td>${student.student}</td>
+                        <td>${student.totalMarks}</td>
+                        <td>
+                            <ul>
+                                ${student.breakdown.map(q => `<li>${q.question}: ${q.marks} marks</li>`).join('')}
+                            </ul>
+                        </td>
+                    </tr>
+                `;
+            }).join('')}
+        </tbody>
+    `;
+    summarySection.appendChild(table);
+}
+
+// Load exam reports on page load
+window.onload = loadExamReports;
+</script>
+
+</body>
+</html>

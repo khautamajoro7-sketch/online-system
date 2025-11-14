@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Student Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #2feffd;
+    }
+    h1 {
+      color: #333;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    li {
+      margin: 10px 0;
+    }
+    a {
+      color: #0066cc;
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    #logout {
+      margin-top: 20px;
+      display: inline-block;
+      color: red;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Student Dashboard</h1>
+  <p>Welcome, <span id="user" strong></span></p>
+
+  <ul>
+    <li><a href="./launchexam.html">Examinations</a></li>
+    <li><a href="./fetchresults.html">View Results</a></li>
+    <li><a href="./profile.html">Profile / Reset Password</a></li>
+  
+  </ul>
+<button><a href="../index.html">Logout</a></button>
+  
+
+
+  <script>
+    const username = sessionStorage.getItem('username');
+    const role = sessionStorage.getItem('role');
+
+    if (!username || role !== 'student') {
+      alert('Access denied. Please login as student.');
+      window.location.href = 'index.html';
+    } else {
+      document.getElementById('user').textContent = username;
+    }
+
+    document.getElementById('logout').addEventListener('click', function() {
+      sessionStorage.clear();
+      window.location.href = 'index.html';
+    });
+  </script>
+
+</body>
+</html>
