@@ -1,0 +1,54 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+  
+<h2>Create New Exam</h2>
+<form id="examForm">
+  <input type="text" id="examTitle" placeholder="Exam Title" required><br>
+  <input type="text" id="subject" placeholder="Subject" required><br>
+  <input type="number" id="duration" placeholder="Duration (minutes)" required><br>
+  <label>Select Questions:</label><br>
+  <div id="questionList"></div>
+  <button type="submit">Create Exam</button>
+  <p id="msg" style="color:green;"></p>
+</form>
+
+<script>
+    const questions = JSON.parse(localStorage.getItem('questions')) || [];
+const questionList = document.getElementById('questionList');
+
+// Display available questions with checkboxes
+questions.forEach((q, i) => {
+  const label = document.createElement('label');
+  label.innerHTML = `<input type="checkbox" value="${i}"> ${q.question}`;
+  questionList.appendChild(label);
+  questionList.appendChild(document.createElement('br'));
+});
+
+document.getElementById('examForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  const title = document.getElementById('examTitle').value.trim();
+  const subject = document.getElementById('subject').value.trim();
+  const duration = parseInt(document.getElementById('duration').value);
+  const selected = Array.from(questionList.querySelectorAll('input:checked')).map(cb => parseInt(cb.value));
+
+  const newExam = { title, subject, duration, questionIds: selected };
+  const exams = JSON.parse(localStorage.getItem('exams')) || [];
+  exams.push(newExam);
+  localStorage.setItem('exams', JSON.stringify(exams));
+
+  document.getElementById('msg').textContent = "Exam created successfully!";
+  this.reset();
+});
+</script>
+</body>
+</html>
+
+

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Register – Online Exam System</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #42e9e9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background: rgb(107, 105, 105);
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 300px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #0066cc;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #004d99;
+    }
+    .msg {
+      color: green;
+      text-align: center;
+    }
+    .error {
+      color: red;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h2>Register</h2>
+  <form id="registerForm">
+    <input type="text" id="username" placeholder="Username" required>
+    <input type="password" id="password" placeholder="Password" required>
+    <select id="role" required>
+      <option value="">Select Role</option>
+      <option value="admin">Administrator</option>
+      <option value="student">Student</option>
+      <option value="examiner">Examiner</option>
+    </select>
+    <button type="submit">Register</button>
+    <p class="msg" id="successMsg"></p>
+    <p class="error" id="errorMsg"></p>
+  </form>
+  <p>Already registered? <a href="index.html">Login here</a></p>
+</div>
+
+<script>
+document.getElementById('registerForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const role = document.getElementById('role').value;
+
+  let users = JSON.parse(localStorage.getItem('users')) || [];
+
+  if (users.find(u => u.username === username)) {
+    document.getElementById('errorMsg').textContent = 'Username already exists.';
+    document.getElementById('successMsg').textContent = '';
+    return;
+  }
+
+  users.push({ username, password, role });
+  localStorage.setItem('users', JSON.stringify(users));
+
+  document.getElementById('successMsg').textContent = 'Registration successful! Redirecting to login...';
+  document.getElementById('errorMsg').textContent = '';
+  setTimeout(() => {
+    window.location.href = 'login.html';
+  }, 2000);
+});
+users.push({ username, password, role });
+localStorage.setItem('users', JSON.stringify(users));
+
+document.getElementById('successMsg').textContent = 'Registration successful! Redirecting...';
+document.getElementById('errorMsg').textContent = '';
+
+// Save session
+sessionStorage.setItem('username', username);
+sessionStorage.setItem('role', role);
+
+// Redirect based on role
+setTimeout(() => {
+    window.location.href = 'index.html';
+  
+}, 1500);
+</script>
+
+</body>
+</html>

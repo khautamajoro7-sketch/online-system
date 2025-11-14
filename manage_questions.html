@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Questions – Online Exam System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #26fdeb;
+            padding: 20px;
+        }
+        .container {
+            background: rgb(134, 132, 132);
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 900px;
+            margin: 0 auto;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+        }
+        .question-list {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .question-list th, .question-list td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .question-list th {
+            background-color: #0066cc;
+            color: white;
+        }
+        button {
+            padding: 5px 10px;
+            margin: 5px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+        }
+        .edit-btn {
+            background-color: rgb(87, 85, 85);
+            color: rgb(12, 2, 2);
+        }
+        .delete-btn {
+            background-color: rgb(112, 109, 109);
+            color: rgb(8, 8, 8);
+        }
+        .add-question-btn {
+            background-color: #0d0d0e;
+            color: rgb(10, 10, 10);
+            text-align: center;
+            width: 100%;
+        }
+        .msg {
+            color: green;
+            text-align: center;
+        }
+        .error {
+            color: red;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Manage Questions for Exam</h1>
+
+    <p class="msg" id="successMsg"></p>
+    <p class="error" id="errorMsg"></p>
+
+    <table class="question-list">
+        <thead>
+            <tr>
+                <th>Question</th>
+                <th>Type</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="questionList"></tbody>
+    </table>
+
+    <button class="add-question-btn" onclick="addNewQuestion()">+ Add New Question</button>
+</div>
+
+<script>
+// Get the exam index from sessionStorage
+const examIndex = sessionStorage.getItem('examIndex');
+const exams = JSON.parse(localStorage.getItem('exams')) || [];
+
+// Check if exam exists
+if (!examIndex || !exams[examIndex]) {
+    window.location.href = 'manage_exams.html';  // Redirect if exam is not found
+}
+
+const exam = exams[examIndex];
+
+// Function to load all questions for the selected exam
+function loadQuestions() {
+    const questionList = document.getElementById('questionList');
+    questionList.innerHTML = '';  // Clear previous questions
+
+    if (exam.questions.length === 0) {
+        questionList.innerHTML = "<tr><td colspan='3' class='error'>No questions available.</td></tr>";
+        return;
+    }
+
+    exam.questions.forEach((question, index) => {
+        const row = document.createElement('tr');
+
+        row.innerHTML = `
+            <td>${question.questionText}</td>
+            <td>${question.type === 'mcq' ? 'Multiple Choice' : 'Short Answer'}</td>
+            <td>
+                <button class="edit-btn" onclick="editQuestion(${index})">Edit</button>
+                <button class="delete-btn" onclick="deleteQuestion(${index})">Delete</button>
+            </td>
+        `;
+        questionList.appendChild(row);
+    });
+}
+
+// Function to add a new question
+function addNewQuestion() {
+    const questionText = prompt("Enter the question text");
+    const questionType = prompt("Enter question type (mcq or short)");
+
+    if (!questionText || !questionType) {
+        document.getElementById('errorMsg').textContent = "Both question text and type are required.";
+        return;
+    }
+
+    const newQuestion = {
+        questionText,
+        type: questionType === 'mcq' ? 'mcq' : 'short',  // Set default to 'short' if not mcq
+        options: questionType === 'mcq' ? [] : null,
+        correctAnswer: questionType === 'mcq' ? null : null,
+        marks: questionType === 'short' ? 1 : null
+    };
+
+    exam.questions.push(newQuestion);
+    localStorage.setItem('exams', JSON.stringify(exams));
+
+    document.getElementById('successMsg').textContent = "New question added successfully!";
+    loadQuestions();
+}
+
+// Function to edit a question
+function editQuestion(index) {
+    const question = exam.questions[index];
+
+    if (question.type === 'mcq') {
+        const newQuestionText = prompt("Edit question text", question.questionText);
+        const newOptions = question.options.map((opt, i) => prompt(`Option ${i + 1}:`, opt));
+        const correctAnswer = prompt("Enter the correct answer option number (1, 2, 3, or 4)");
+
+        if (newQuestionText && newOptions && correctAnswer !== null) {
+            exam.questions[index] = { ...question, questionText: newQuestionText, options: newOptions, correctAnswer };
+            localStorage.setItem('exams', JSON.stringify(exams));
+            loadQuestions();
+            document.getElementById('successMsg').textContent = "Question updated successfully!";
+        } else {
+            document.getElementById('errorMsg').textContent = "All fields are required for MCQ questions.";
+        }
+    } else {
+        const newQuestionText = prompt("Edit question text", question.questionText);
+        const newMarks = prompt("Enter new marks for this question", question.marks);
+
+        if (newQuestionText && newMarks) {
+            exam.questions[index] = { ...question, questionText: newQuestionText, marks: newMarks };
+            localStorage.setItem('exams', JSON.stringify(exams));
+            loadQuestions();
+            document.getElementById('successMsg').textContent = "Question updated successfully!";
+        } else {
+            document.getElementById('errorMsg').textContent = "All fields are required for short answer questions.";
+        }
+    }
+}
+
+// Function to delete a question
+function deleteQuestion(index) {
+    const confirmation = confirm("Are you sure you want to delete this question?");
+    if (confirmation) {
+        exam.questions.splice(index, 1);  // Remove the question from the array
+        localStorage.setItem('exams', JSON.stringify(exams));
+        loadQuestions();  // Reload the question list
+        document.getElementById('successMsg').textContent = "Question deleted successfully!";
+    }
+}
+
+// Load questions on page load
+window.onload = loadQuestions;
+</script>
+
+</body>
+</html>

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Grade Exams – Online Exam System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #23e0ee;
+            padding: 20px;
+        }
+        .container {
+            background: rgb(146, 142, 142);
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 900px;
+            margin: 0 auto;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        select, input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background: #0066cc;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #004d99;
+        }
+        .submission-box, .question-box {
+            background: #fafafa;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+        .graded-tag {
+            color: green;
+            font-weight: bold;
+        }
+        .error {
+            text-align: center;
+            color: red;
+        }
+        .msg {
+            text-align: center;
+            color: green;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Grade Exams</h1>
+
+    <!-- Select Exam -->
+    <section>
+        <label>Select Exam:</label>
+        <select id="examSelect"></select>
+    </section>
+
+    <div id="submissionsSection"></div>
+
+    <div id="gradingSection" style="display:none;">
+        <h2>Grading: <span id="gradingStudent"></span></h2>
+        <form id="gradeForm"></form>
+        <button id="saveGradesBtn">Save Grades</button>
+        <p class="msg" id="successMsg"></p>
+    </div>
+
+</div>
+
+<script>
+// Load data
+const exams = JSON.parse(localStorage.getItem('exams')) || [];
+const submissions = JSON.parse(localStorage.getItem('submissions')) || [];
+let graded = JSON.parse(localStorage.getItem('graded')) || [];
+
+let selectedExam = null;
+let selectedSubmission = null;
+
+// Populate exam dropdown
+const examSelect = document.getElementById('examSelect');
+exams.forEach(exam => {
+    const opt = document.createElement('option');
+    opt.value = exam.id;
+    opt.textContent = exam.title;
+    examSelect.appendChild(opt);
+});
+
+// FIX: Auto-load first exam on page load
+window.onload = function() {
+    if (exams.length > 0) {
+        examSelect.value = exams[0].id;
+        const firstExamId = parseInt(examSelect.value);
+        selectedExam = exams.find(ex => ex.id === firstExamId);
+        loadSubmissions(firstExamId);
+    }
+};
+
+// FIX: Change event
+examSelect.addEventListener('change', function() {
+    let examId = parseInt(this.value);
+    selectedExam = exams.find(ex => ex.id === examId);
+    loadSubmissions(examId);
+    document.getElementById('gradingSection').style.display = "none";
+});
+
+function loadSubmissions(examId) {
+    const container = document.getElementById('submissionsSection');
+    container.innerHTML = "<h2>Student Submissions</h2>";
+
+    const examSubs = submissions.filter(s => s.examId == examId);
+
+    if (examSubs.length === 0) {
+        container.innerHTML += "<p class='error'>No submissions found.</p>";
+        return;
+    }
+
+    examSubs.forEach(sub => {
+        const div = document.createElement('div');
+        div.classList.add('submission-box');
+
+        const isGraded = graded.some(g => g.examId == examId && g.student == sub.student);
+
+        div.innerHTML = `
+            <p><strong>Student:</strong> ${sub.student} 
+                ${isGraded ? "<span class='graded-tag'>(Already graded)</span>" : ""}
+            </p>
+            <p><strong>Submitted:</strong> ${new Date(sub.timestamp).toLocaleString()}</p>
+            <button onclick="startGrading('${sub.student}', ${sub.timestamp})">Grade Submission</button>
+        `;
+
+        container.appendChild(div);
+    });
+}
+
+window.startGrading = function(student, timestamp) {
+    selectedSubmission = submissions.find(s =>
+        s.student === student && s.timestamp === timestamp
+    );
+
+    document.getElementById('gradingStudent').textContent = student;
+    generateGradingForm();
+    document.getElementById('gradingSection').style.display = "block";
+};
+
+function generateGradingForm() {
+    const form = document.getElementById('gradeForm');
+    form.innerHTML = "";
+
+    selectedExam.questions.forEach((q, index) => {
+        const studentAnswer = selectedSubmission.answers[index].answer;
+        const div = document.createElement('div');
+        div.classList.add('question-box');
+
+        let html = `<h3>Q${index + 1}. ${q.questionText}</h3>`;
+
+        if (q.type === "mcq") {
+            html += `<p><strong>Correct Answer:</strong> Option ${parseInt(q.correctAnswer) + 1}</p>`;
+            html += `<p><strong>Student Answer:</strong> ${
+                studentAnswer === null ? "(No Answer)" : "Option " + (parseInt(studentAnswer) + 1)
+            }</p>`;
+
+            const autoMarks = studentAnswer == q.correctAnswer ? 1 : 0;
+
+            html += `
+                <label>Marks (Auto-graded, can override):</label>
+                <input type="number" name="q${index}" value="${autoMarks}" min="0" max="1">
+            `;
+
+        } else {
+            html += `<p><strong>Student Answer:</strong> ${studentAnswer}</p>`;
+            html += `
+                <label>Marks (out of ${q.marks}):</label>
+                <input type="number" name="q${index}" min="0" max="${q.marks}" required>
+            `;
+        }
+
+        div.innerHTML = html;
+        form.appendChild(div);
+    });
+}
+
+document.getElementById('saveGradesBtn').addEventListener('click', () => {
+    const form = document.getElementById('gradeForm');
+    const breakdown = [];
+    let total = 0;
+
+    selectedExam.questions.forEach((q, index) => {
+        const mark = parseFloat(form.querySelector(`input[name="q${index}"]`).value);
+        breakdown.push({
+            question: q.questionText,
+            marks: mark
+        });
+        total += mark;
+    });
+
+    graded = graded.filter(g => !(g.examId == selectedExam.id && g.student == selectedSubmission.student));
+
+    graded.push({
+        examId: selectedExam.id,
+        student: selectedSubmission.student,
+        totalMarks: total,
+        breakdown,
+        timestamp: Date.now()
+    });
+
+    localStorage.setItem('graded', JSON.stringify(graded));
+
+    document.getElementById('successMsg').textContent = "Grades saved successfully!";
+    loadSubmissions(selectedExam.id);
+});
+</script>
+
+</body>
+</html>
